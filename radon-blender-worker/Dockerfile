@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxfixes3 \
     libxkbcommon0 \
     libsm6 \
-    libgl1-mesa-glx \
+    
     libgl1 \
     libegl1 \
     libopengl0 \
