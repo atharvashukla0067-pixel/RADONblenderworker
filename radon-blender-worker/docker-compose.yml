@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  radon-blender-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: radon-blender-worker
+    ports:
+      - "8001:8001"
+    environment:
+      - BLENDER_PATH=/usr/bin/blender
+      - OUTPUT_DIR=/tmp/radon-output
+      - HOST=0.0.0.0
+      - PORT=8001
+      - JOB_TIMEOUT=120
+      - MAX_OUTPUT_SIZE_MB=100
+    volumes:
+      - radon-output:/tmp/radon-output
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,json; r=urllib.request.urlopen('http://localhost:8001/health'); d=json.loads(r.read()); exit(0 if d.get('blender')=='available' else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  radon-output:

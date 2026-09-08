@@ -1,0 +1,9 @@
+{
+  "name": "radon-blender-worker",
+  "private": true,
+  "scripts": {
+    "build": "cd radon-blender-worker && pip install --break-system-packages -r requirements.txt",
+    "start": "cd radon-blender-worker && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}",
+    "test": "cd radon-blender-worker && python3 -m pytest tests/ -v"
+  }
+}
