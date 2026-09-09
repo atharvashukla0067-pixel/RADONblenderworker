@@ -52,8 +52,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ------------------------------------------------------------
 
 ENV BLENDER_VERSION=4.2
-ENV BLENDER_SUBVERSION=4.2.4
-ENV BLENDER_URL=https://download.blender.org/release/Blender4.2/blender-4.2.4-linux-x64.tar.xz
+ENV BLENDER_SUBVERSION=4.2.23
+ENV BLENDER_URL=https://mirror.blender.org/release/Blender4.2/blender-4.2.23-linux-x64.tar.xz
 
 RUN curl -L --fail --retry 5 --retry-delay 3 \
     "${BLENDER_URL}" \
