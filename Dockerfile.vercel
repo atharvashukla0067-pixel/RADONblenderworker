@@ -9,6 +9,7 @@ FROM python:3.12-slim
 # ------------------------------------------------------------
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     wget \
     ca-certificates \
     xz-utils \
@@ -54,32 +55,35 @@ ENV BLENDER_VERSION=4.2
 ENV BLENDER_SUBVERSION=4.2.4
 ENV BLENDER_URL=https://download.blender.org/release/Blender4.2/blender-4.2.4-linux-x64.tar.xz
 
-RUN wget -q --no-check-certificate "${BLENDER_URL}" -O /tmp/blender.tar.xz && \
+RUN curl -L --fail --retry 5 --retry-delay 3 \
+    "${BLENDER_URL}" \
+    -o /tmp/blender.tar.xz && \
     mkdir -p /opt/blender && \
     tar -xf /tmp/blender.tar.xz -C /opt/blender --strip-components=1 && \
     rm /tmp/blender.tar.xz && \
-    ln -s /opt/blender/blender /usr/bin/blender && \
+    ln -sf /opt/blender/blender /usr/bin/blender && \
     chmod +x /usr/bin/blender
 
-# Verify REAL Blender exists during image build
+# ------------------------------------------------------------
+# VERIFY REAL BLENDER DURING BUILD
+# ------------------------------------------------------------
+
 RUN blender --background --version
 
 # ------------------------------------------------------------
-# RADON worker
+# RADON WORKER
 # ------------------------------------------------------------
 
 WORKDIR /app
 
-# Install Python dependencies from the worker
 COPY radon-blender-worker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the complete worker application
 COPY radon-blender-worker/ ./
 
 # ------------------------------------------------------------
-# Runtime configuration
+# RUNTIME CONFIGURATION
 # ------------------------------------------------------------
 
 ENV BLENDER_PATH=/usr/bin/blender
@@ -91,6 +95,9 @@ ENV HOST=0.0.0.0
 
 RUN mkdir -p /tmp/radon-output
 
-# Vercel supplies PORT at runtime.
-# Do NOT hardcode the production port.
+# ------------------------------------------------------------
+# START FASTAPI
+# Vercel provides PORT automatically
+# ------------------------------------------------------------
+
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
