@@ -1,1 +1,96 @@
+# RADON Blender Worker — Vercel Container
+# Real Blender runtime + FastAPI
+# Designed for Vercel Fluid Compute
 
+FROM python:3.12-slim
+
+# ------------------------------------------------------------
+# System dependencies required by Blender
+# ------------------------------------------------------------
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    ca-certificates \
+    xz-utils \
+    libxrender1 \
+    libxi6 \
+    libxxf86vm1 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libsm6 \
+    libgl1 \
+    libegl1 \
+    libopengl0 \
+    libglib2.0-0 \
+    libfontconfig1 \
+    libfreetype6 \
+    libxext6 \
+    libx11-6 \
+    libxau6 \
+    libxdmcp6 \
+    libxss1 \
+    libxtst6 \
+    libxcb1 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-randr0 \
+    libxcb-render-util0 \
+    libxcb-shape0 \
+    libxcb-sync1 \
+    libxcb-xfixes0 \
+    libxcb-xinerama0 \
+    libxcb-xinput0 \
+    libxcb-xkb1 \
+    libxkbcommon-x11-0 \
+    libdbus-1-3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# Install REAL Blender 4.2.4
+# ------------------------------------------------------------
+
+ENV BLENDER_VERSION=4.2
+ENV BLENDER_SUBVERSION=4.2.4
+ENV BLENDER_URL=https://download.blender.org/release/Blender4.2/blender-4.2.4-linux-x64.tar.xz
+
+RUN wget -q --no-check-certificate "${BLENDER_URL}" -O /tmp/blender.tar.xz && \
+    mkdir -p /opt/blender && \
+    tar -xf /tmp/blender.tar.xz -C /opt/blender --strip-components=1 && \
+    rm /tmp/blender.tar.xz && \
+    ln -s /opt/blender/blender /usr/bin/blender && \
+    chmod +x /usr/bin/blender
+
+# Verify REAL Blender exists during image build
+RUN blender --background --version
+
+# ------------------------------------------------------------
+# RADON worker
+# ------------------------------------------------------------
+
+WORKDIR /app
+
+# Install Python dependencies from the worker
+COPY radon-blender-worker/requirements.txt ./requirements.txt
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the complete worker application
+COPY radon-blender-worker/ ./
+
+# ------------------------------------------------------------
+# Runtime configuration
+# ------------------------------------------------------------
+
+ENV BLENDER_PATH=/usr/bin/blender
+ENV OUTPUT_DIR=/tmp/radon-output
+ENV JOB_TIMEOUT=120
+ENV MAX_OUTPUT_SIZE_MB=100
+ENV PYTHONUNBUFFERED=1
+ENV HOST=0.0.0.0
+
+RUN mkdir -p /tmp/radon-output
+
+# Vercel supplies PORT at runtime.
+# Do NOT hardcode the production port.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
